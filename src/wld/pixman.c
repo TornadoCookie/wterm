@@ -390,22 +390,24 @@ renderer_draw_text(struct wld_renderer *base,
 			pixman_image_t *image;
 			FT_Bitmap *bitmap;
 
-			bitmap = &glyph->bitmap;
-			image = pixman_image_create_bits(PIXMAN_a1, bitmap->width, bitmap->rows, NULL, bitmap->pitch);
+            bitmap = &glyph->bitmap;
+            image = pixman_image_create_bits
+                (PIXMAN_a8, bitmap->width, bitmap->rows, NULL, bitmap->pitch);
 
 			if (!image)
 				goto advance;
 
-			pitch = pixman_image_get_stride(image);
-			bytes_per_row = (bitmap->width + 7) / 8;
-			src = bitmap->buffer;
-			dst = (uint8_t *)pixman_image_get_data(image);
+            pitch = pixman_image_get_stride(image);
+            bytes_per_row = bitmap->width;
+            src = bitmap->buffer;
+            dst = (uint8_t *) pixman_image_get_data(image);
 
-			for (row = 0; row < bitmap->rows; ++row) {
-				/* Pixman's A1 format expects the bits in the opposite order
-				 * that Freetype gives us. Sigh... */
-				for (byte_index = 0; byte_index < bytes_per_row; ++byte_index)
-					dst[byte_index] = reverse(src[byte_index]);
+            for (row = 0; row < bitmap->rows; ++row)
+            {
+                /* Pixman's A1 format expects the bits in the opposite order
+                 * that Freetype gives us. Sigh... */
+                for (byte_index = 0; byte_index < bytes_per_row; ++byte_index)
+                    dst[byte_index] = src[byte_index];
 
 				dst += pitch;
 				src += bitmap->pitch;
