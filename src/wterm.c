@@ -33,6 +33,7 @@
 
 #include "arg.h"
 #include "xdg-shell-client-protocol.h"
+#include "xdg-shell-unstable-v6-client-protocol.h"
 
 char *argv0;
 
@@ -251,11 +252,14 @@ typedef struct {
   struct wl_surface *surface;
   struct wl_buffer *buffer;
   struct xdg_wm_base *xdgshell;
+  struct zxdg_shell_v6 *zxdgshell;
   struct wl_shell *shell;
   struct wl_shell_surface *shellsurf;
   struct xdg_surface *xdgsurface;
+  struct zxdg_surface_v6 *zxdgsurface;
   struct wl_surface *popupsurface;
   struct xdg_toplevel *xdgtoplevel;
+  struct zxdg_toplevel_v6 *zxdgtoplevel;
   XKB xkb;
   bool configured;
   int px, py; /* pointer x and y */
@@ -496,6 +500,11 @@ static void xdgsurfconfigure(void *, struct xdg_surface *, uint32_t);
 static void xdgtopconfigure(void *, struct xdg_toplevel *, int32_t, int32_t,
                             struct wl_array *);
 static void xdgtopclose(void *, struct xdg_toplevel *);
+static void zxdgshellping(void *, struct zxdg_shell_v6 *, uint32_t);
+static void zxdgsurfconfigure(void *, struct zxdg_surface_v6 *, uint32_t);
+static void zxdgtopconfigure(void *, struct zxdg_toplevel_v6 *, int32_t, int32_t, 
+                            struct wl_array *);
+static void zxdgtopclose(void *, struct zxdg_toplevel_v6 *);
 static void datadevoffer(void *, struct wl_data_device *,
                          struct wl_data_offer *);
 static void datadeventer(void *, struct wl_data_device *, uint32_t,
@@ -544,12 +553,16 @@ static struct wl_keyboard_listener kbdlistener = {
 static struct wl_pointer_listener ptrlistener = {ptrenter, ptrleave, ptrmotion,
                                                  ptrbutton, ptraxis};
 static struct xdg_wm_base_listener base_listener = {xdgshellping};
+static struct zxdg_shell_v6_listener shell_listener = {zxdgshellping};
 static struct wl_data_device_listener datadevlistener = {
     datadevoffer,  datadeventer, datadevleave,
     datadevmotion, datadevdrop,  datadevselection};
 static struct xdg_surface_listener xdgsurflistener = {xdgsurfconfigure};
 static struct xdg_toplevel_listener xdgtoplevellistener = {xdgtopconfigure,
                                                            xdgtopclose};
+static struct zxdg_surface_v6_listener zxdgsurflistener = {zxdgsurfconfigure};
+static struct zxdg_toplevel_v6_listener zxdgtoplevellistener = {zxdgtopconfigure,
+                                                           zxdgtopclose};
 static struct wl_data_offer_listener dataofferlistener = {dataofferoffer};
 static struct wl_data_source_listener datasrclistener = {
     datasrctarget, datasrcsend, datasrccancelled};
@@ -2999,6 +3012,14 @@ void wlinit(void) {
       xdg_toplevel_add_listener(wl.xdgtoplevel, &xdgtoplevellistener, NULL);
     } else
       die("failed to get xdgsurface");
+  } else if (wl.zxdgshell) {
+    wl.zxdgsurface = zxdg_shell_v6_get_xdg_surface(wl.zxdgshell, wl.surface);
+    if (wl.zxdgsurface) {
+      zxdg_surface_v6_add_listener(wl.zxdgsurface, &zxdgsurflistener, NULL);
+      wl.zxdgtoplevel = zxdg_surface_v6_get_toplevel(wl.zxdgsurface);
+      zxdg_toplevel_v6_add_listener(wl.zxdgtoplevel, &zxdgtoplevellistener, NULL);
+    } else
+      die("failed to get zxdgsurface");
   } else
     die("no wayland shell");
   wl_surface_commit(wl.surface);
@@ -3458,11 +3479,15 @@ void regglobal(void *data, struct wl_registry *registry, uint32_t name,
 
   if (strcmp(interface, "wl_compositor") == 0) {
     wl.cmp = wl_registry_bind(registry, name, &wl_compositor_interface, 3);
-  } else if (strcmp(interface, "xdg_wm_base") == 0 /*|| strcmp(interface, "zxdg_shell_v6") == 0*/) {
+  } else if (strcmp(interface, "xdg_wm_base") == 0) {
     // printf("init xdg_wm_base\n");
     wl.xdgshell =
         wl_registry_bind(registry, name, &xdg_wm_base_interface, 1);
     xdg_wm_base_add_listener(wl.xdgshell, &base_listener, NULL);
+  } else if (strcmp(interface, "zxdg_shell_v6") == 0) {
+    wl.zxdgshell =
+        wl_registry_bind(registry, name, &zxdg_shell_v6_interface, 1);
+    zxdg_shell_v6_add_listener(wl.zxdgshell, &shell_listener, NULL);
   } else if (strcmp(interface, "wl_shm") == 0) {
     wl.shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
   } else if (strcmp(interface, "wl_seat") == 0) {
@@ -3799,6 +3824,28 @@ static void close_shell_and_exit() {
 }
 
 void xdgtopclose(void *data, struct xdg_toplevel *top) {
+  close_shell_and_exit();
+}
+
+void zxdgshellping(void *data, struct zxdg_shell_v6 *shell, uint32_t serial) {
+  zxdg_shell_v6_pong(shell, serial);
+}
+
+void zxdgsurfconfigure(void *data, struct zxdg_surface_v6 *surf,
+                       uint32_t serial) {
+  zxdg_surface_v6_ack_configure(surf, serial);
+}
+
+void zxdgtopconfigure(void *data, struct zxdg_toplevel_v6 *top, int32_t w,
+                      int32_t h, struct wl_array *states) {
+  zxdg_toplevel_v6_set_app_id(top, opt_class ? opt_class : termname);
+  wl.configured = true;
+  if (wl.w == w && wl.h == h)
+    return;
+  cresize(w, h);
+}
+
+void zxdgtopclose(void *, struct zxdg_toplevel_v6 *) {
   close_shell_and_exit();
 }
 
