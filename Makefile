@@ -46,7 +46,7 @@ include/%-client-protocol.h: include/%.xml
 
 $(OBJECTS): $(HDRS) include/config.h
 
-wterm: $(OBJECTS)
+wterm: $(OBJECTS) wld
 	$(CC) -o wterm $(OBJECTS) $(LDFLAGS)
 
 wld:
