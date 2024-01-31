@@ -34,6 +34,7 @@
 #include "arg.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-shell-unstable-v6-client-protocol.h"
+#include "xdg-decoration-unstable-v1-client-protocol.h"
 
 char *argv0;
 
@@ -260,6 +261,7 @@ typedef struct {
   struct wl_surface *popupsurface;
   struct xdg_toplevel *xdgtoplevel;
   struct zxdg_toplevel_v6 *zxdgtoplevel;
+  struct zxdg_decoration_manager_v1 *zxdgdecorationmanager;
   XKB xkb;
   bool configured;
   int px, py; /* pointer x and y */
@@ -3498,6 +3500,11 @@ void regglobal(void *data, struct wl_registry *registry, uint32_t name,
   } else if (strcmp(interface, "wl_output") == 0) {
     /* bind to outputs so we can get surface enter events */
     wl_registry_bind(registry, name, &wl_output_interface, 2);
+  } else if (strcmp(interface, "zxdg_decoration_manager_v1") == 0) {
+    printf("Supports window decorations\n");
+    wl.zxdgdecorationmanager = 
+        wl_registry_bind(registry, name, &zxdg_decoration_manager_v1_interface,
+                         1);
   }
 }
 
