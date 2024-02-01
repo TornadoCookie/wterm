@@ -388,6 +388,7 @@ typedef struct {
 
 static void die(const char *, ...);
 static void draw(void);
+static void drawtopbar(void);
 static void redraw(void);
 static void drawregion(int, int, int, int);
 static void execsh(void);
@@ -2793,6 +2794,7 @@ static void wlloadcursor(void) {
 void wltermclear(int col1, int row1, int col2, int row2) {
   uint32_t color = dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
   color = (color & term_alpha << 24) | (color & 0x00FFFFFF);
+  row1++; row2++;
   wld_fill_rectangle(wld.renderer, color, borderpx + col1 * wl.cw,
                      borderpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
                      (row2 - row1 + 1) * wl.ch);
@@ -3001,7 +3003,7 @@ void wlinit(void) {
   wlloadcols();
   wlloadcursor();
   wl.vis = 0;
-  wl.h = 2 * borderpx + term.row * wl.ch;
+  wl.h = borderpx + term.row * wl.ch + wl.ch;
   wl.w = 2 * borderpx + term.col * wl.cw;
 
   wl.surface = wl_compositor_create_surface(wl.cmp);
@@ -3034,6 +3036,7 @@ void wlinit(void) {
  */
 
 void wldraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
+  y++;
   int winx = borderpx + x * wl.cw, winy = borderpx + y * wl.ch,
       width = charlen * wl.cw, xp, i;
   int frcflags, charexists;
@@ -3345,6 +3348,18 @@ void wlresettitle(void) { wlsettitle(opt_title ? opt_title : "wterm"); }
 
 void redraw(void) { tfulldirt(); }
 
+void drawtopbar(void) {
+  const char *topbartext = "X [] -";
+  Font *font = &dc.bfont;
+
+  /* TODO: text won't draw */
+  wl_surface_damage(wl.surface, 0, 0, wl.w, wl.ch);
+  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, wl.w,
+                     wl.ch);
+  wld_draw_text(wld.renderer, font->match, defaultbg, borderpx, borderpx + 
+                font->ascent, topbartext, 2, NULL);
+}
+
 void draw(void) {
   int y, y0;
 
@@ -3353,12 +3368,13 @@ void draw(void) {
       continue;
     for (y0 = y; y <= term.bot && term.dirty[y]; ++y)
       ;
-    wl_surface_damage(wl.surface, 0, borderpx + y0 * wl.ch, wl.w,
+    wl_surface_damage(wl.surface, 0, wl.ch + y0 * wl.ch, wl.w,
                       (y - y0) * wl.ch);
   }
 
   wld_set_target_buffer(wld.renderer, wld.buffer);
   drawregion(0, 0, term.col, term.row);
+  drawtopbar();
   wl.framecb = wl_surface_frame(wl.surface);
   wl_callback_add_listener(wl.framecb, &framelistener, NULL);
   wld_flush(wld.renderer);
