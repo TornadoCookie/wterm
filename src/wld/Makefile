@@ -87,13 +87,18 @@ WLD_PACKAGES        = $(WLD_REQUIRES) $(WLD_REQUIRES_PRIVATE)
 WLD_PACKAGE_CFLAGS ?= $(call pkgconfig,$(WLD_PACKAGES),cflags,CFLAGS)
 WLD_PACKAGE_LIBS   ?= $(call pkgconfig,$(WLD_PACKAGES),libs,LIBS)
 
-FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99
+FINAL_CFLAGS = $(CFLAGS) -fvisibility=hidden -std=c99 -Wvla
 FINAL_CPPFLAGS = $(CPPFLAGS) -D_XOPEN_SOURCE=700
 
 # Warning/error flags
 FINAL_CFLAGS += -Werror=implicit-function-declaration -Werror=implicit-int \
                 -Werror=pointer-sign -Werror=pointer-arith \
                 -Wall -Wno-missing-braces
+
+ifeq ($(shell uname),NetBSD)
+    # Needed for mkostemp
+    FINAL_CPPFLAGS += -D_NETBSD_SOURCE
+endif
 
 ifeq ($(ENABLE_DEBUG),1)
     FINAL_CPPFLAGS += -DENABLE_DEBUG=1
