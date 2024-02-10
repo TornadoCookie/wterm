@@ -2796,10 +2796,6 @@ static void wlloadcursor(void) {
 void wltermclear(int col1, int row1, int col2, int row2) {
   uint32_t color = dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
   color = (color & term_alpha << 24) | (color & 0x00FFFFFF);
-  //printf("wltermclear %d %d %d %d\n", col1, row1, col2, row2);
-  //printf("wl.h = %d, topbarpx = %d\n", wl.h, topbarpx);
-  //printf("x = %d, y = %d, w = %d, h = %d\n", borderpx + col1 * wl.cw, topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw, (row2 - row1 + 1) * wl.ch);
-  //if (!wl.zxdgdecorationmanager) {row1++; row2++;}
   wld_fill_rectangle(wld.renderer, color, borderpx + col1 * wl.cw,
                      topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
                      (row2 - row1 + 1) * wl.ch);
@@ -3359,15 +3355,12 @@ void wlresettitle(void) { wlsettitle(opt_title ? opt_title : "wterm"); }
 void redraw(void) { tfulldirt(); }
 
 void drawtopbar(void) {
-  const char *topbartext = "X [] -";
-  Font *font = &dc.bfont;
+  char *topbartext = "X [] -";
 
-  /* TODO: text won't draw */
   wl_surface_damage(wl.surface, 0, 0, wl.w, topbarpx);
-  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, wl.w,
-                     topbarpx);
-  wld_draw_text(wld.renderer, font->match, defaultbg, borderpx, borderpx + 
-                font->ascent, topbartext, 2, NULL);
+  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, wl.w, topbarpx);
+  Glyph base = {' ', ATTR_NULL, defaultbg, TRUECOLOR(255, 255, 255)};
+  wldraws(topbartext, base, 0, -1, strlen(topbartext), strlen(topbartext));
 }
 
 void draw(void) {
