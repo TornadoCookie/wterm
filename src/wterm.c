@@ -2642,6 +2642,8 @@ void tresize(int col, int row) {
   int *bp;
   TCursor c;
 
+  printf("tresize(%d, %d)\n", col, row);
+
   if (col < 1 || row < 1) {
     fprintf(stderr, "tresize: error resizing to %dx%d\n", col, row);
     return;
@@ -2794,9 +2796,10 @@ static void wlloadcursor(void) {
 void wltermclear(int col1, int row1, int col2, int row2) {
   uint32_t color = dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
   color = (color & term_alpha << 24) | (color & 0x00FFFFFF);
-  printf("wl.h = %d, topbarpx = %d\n", wl.h, topbarpx);
-  printf("x = %d, y = %d, w = %d, h = %d\n", borderpx + col1 * wl.cw, topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw, (row2 - row1 + 1) * wl.ch);
-  if (!wl.zxdgdecorationmanager) {row1--; row2--;}
+  //printf("wltermclear %d %d %d %d\n", col1, row1, col2, row2);
+  //printf("wl.h = %d, topbarpx = %d\n", wl.h, topbarpx);
+  //printf("x = %d, y = %d, w = %d, h = %d\n", borderpx + col1 * wl.cw, topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw, (row2 - row1 + 1) * wl.ch);
+  //if (!wl.zxdgdecorationmanager) {row1++; row2++;}
   wld_fill_rectangle(wld.renderer, color, borderpx + col1 * wl.cw,
                      topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
                      (row2 - row1 + 1) * wl.ch);
@@ -3491,7 +3494,7 @@ void cresize(int width, int height) {
     wl.h = height;
 
   col = (wl.w - 2 * borderpx) / wl.cw;
-  row = (wl.h - 2 * borderpx) / wl.ch;
+  row = (wl.h - (topbarpx + borderpx)) / wl.ch;
 
   tresize(col, row);
   wlresize(col, row);
