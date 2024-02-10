@@ -3767,6 +3767,15 @@ void ptrbutton(void *data, struct wl_pointer *pointer, uint32_t serial,
         selclear();
       sel.mode = SEL_IDLE;
       tsetdirt(sel.nb.y, sel.ne.y);
+      if (wl.py < topbarpx) {
+        if (wl.px < wl.cw) {
+          exit(EXIT_SUCCESS);
+        } else if (wl.px < wl.cw * 4 && wl.px > wl.cw * 2) {
+          /* TODO: maximize */
+        } else if (wl.px < wl.cw * 7 && wl.px > wl.cw * 5) {
+          /* TODO: minimize */
+        }
+      }
     }
     break;
 
