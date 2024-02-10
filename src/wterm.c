@@ -2794,7 +2794,7 @@ static void wlloadcursor(void) {
 void wltermclear(int col1, int row1, int col2, int row2) {
   uint32_t color = dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
   color = (color & term_alpha << 24) | (color & 0x00FFFFFF);
-  row1++; row2++;
+  if (!wl.zxdgdecorationmanager) { row1++; row2++; }
   wld_fill_rectangle(wld.renderer, color, borderpx + col1 * wl.cw,
                      borderpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
                      (row2 - row1 + 1) * wl.ch);
@@ -3003,7 +3003,10 @@ void wlinit(void) {
   wlloadcols();
   wlloadcursor();
   wl.vis = 0;
-  wl.h = borderpx + term.row * wl.ch + wl.ch;
+  if (wl.zxdgdecorationmanager)
+    wl.h = borderpx * 2 + term.row * wl.ch;
+  else
+    wl.h = borderpx + term.row * wl.ch + wl.ch;
   wl.w = 2 * borderpx + term.col * wl.cw;
 
   wl.surface = wl_compositor_create_surface(wl.cmp);
@@ -3036,7 +3039,7 @@ void wlinit(void) {
  */
 
 void wldraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
-  y++;
+  if (!wl.zxdgdecorationmanager) y++;
   int winx = borderpx + x * wl.cw, winy = borderpx + y * wl.ch,
       width = charlen * wl.cw, xp, i;
   int frcflags, charexists;
@@ -3368,13 +3371,19 @@ void draw(void) {
       continue;
     for (y0 = y; y <= term.bot && term.dirty[y]; ++y)
       ;
-    wl_surface_damage(wl.surface, 0, wl.ch + y0 * wl.ch, wl.w,
-                      (y - y0) * wl.ch);
+    if (wl.zxdgdecorationmanager) { 
+      wl_surface_damage(wl.surface, 0, y0 * wl.ch, wl.w,
+                        (y - y0) * wl.ch);
+    }
+    else {
+      wl_surface_damage(wl.surface, 0, wl.ch + y0 * wl.ch, wl.w,
+                        (y - y0) * wl.ch);
+    }
   }
 
   wld_set_target_buffer(wld.renderer, wld.buffer);
   drawregion(0, 0, term.col, term.row);
-  drawtopbar();
+  if (!wl.zxdgdecorationmanager) drawtopbar();
   wl.framecb = wl_surface_frame(wl.surface);
   wl_callback_add_listener(wl.framecb, &framelistener, NULL);
   wld_flush(wld.renderer);
