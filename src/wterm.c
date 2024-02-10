@@ -3365,6 +3365,15 @@ void drawtopbar(void) {
   wldraws(topbartext, base, 0, -1, strlen(topbartext), strlen(topbartext));
 }
 
+void drawborderextra(void) {
+  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, borderpx,
+                     wl.h);
+  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), wl.w - borderpx,
+                     0, borderpx, wl.h);
+  wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0,
+                     wl.h - borderpx, wl.w, borderpx);
+}
+
 void draw(void) {
   int y, y0;
 
@@ -3380,6 +3389,7 @@ void draw(void) {
   wld_set_target_buffer(wld.renderer, wld.buffer);
   drawregion(0, 0, term.col, term.row);
   if (!wl.zxdgdecorationmanager) drawtopbar();
+  drawborderextra();
   wl.framecb = wl_surface_frame(wl.surface);
   wl_callback_add_listener(wl.framecb, &framelistener, NULL);
   wld_flush(wld.renderer);
