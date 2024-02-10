@@ -273,6 +273,7 @@ typedef struct {
   char state; /* focus, redraw, visible */
   int cursor; /* cursor style */
   struct wl_callback *framecb;
+  bool maximized;
 } Wayland;
 
 typedef struct {
@@ -3355,7 +3356,8 @@ void wlresettitle(void) { wlsettitle(opt_title ? opt_title : "wterm"); }
 void redraw(void) { tfulldirt(); }
 
 void drawtopbar(void) {
-  char *topbartext = "X [] -";
+  char topbartext[8];
+  snprintf(topbartext, 7, "X %2s -", wl.maximized ? "][" : "[]");
 
   wl_surface_damage(wl.surface, 0, 0, wl.w, topbarpx);
   wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, wl.w, topbarpx);
@@ -3771,9 +3773,30 @@ void ptrbutton(void *data, struct wl_pointer *pointer, uint32_t serial,
         if (wl.px < wl.cw) {
           exit(EXIT_SUCCESS);
         } else if (wl.px < wl.cw * 4 && wl.px > wl.cw * 2) {
-          /* TODO: maximize */
+          if (wl.maximized) {
+            if (wl.xdgtoplevel) {
+              xdg_toplevel_unset_maximized(wl.xdgtoplevel);
+            }
+            if (wl.zxdgtoplevel) {
+              zxdg_toplevel_v6_unset_maximized(wl.zxdgtoplevel);
+            }
+            wl.maximized = false;
+          } else {
+            if (wl.xdgtoplevel) {
+              xdg_toplevel_set_maximized(wl.xdgtoplevel);
+            }
+            if (wl.zxdgtoplevel) {
+              zxdg_toplevel_v6_set_maximized(wl.zxdgtoplevel);
+            }
+            wl.maximized = true;
+          }
         } else if (wl.px < wl.cw * 7 && wl.px > wl.cw * 5) {
-          /* TODO: minimize */
+          if (wl.xdgtoplevel) {
+            xdg_toplevel_set_minimized(wl.xdgtoplevel);
+          }
+          if (wl.zxdgtoplevel) {
+            zxdg_toplevel_v6_set_minimized(wl.zxdgtoplevel);
+          }
         }
       }
     }
@@ -3785,7 +3808,7 @@ void ptrbutton(void *data, struct wl_pointer *pointer, uint32_t serial,
         ttysend(mk->s, strlen(mk->s));
         return;
       }
-      if (wl.py < topbarpx) {
+      if (wl.py < topbarpx && wl.px > wl.cw * 9) {
         if (wl.xdgtoplevel) {
           xdg_toplevel_move(wl.xdgtoplevel, wl.seat, serial);
         }
