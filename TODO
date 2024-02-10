@@ -3,6 +3,14 @@ vt emulation
 
 * double-height support
 
+st features
+-----------
+
+* proper xim support
+* proper mouse support
+* antialiased fonts
+* fallback fonts
+
 code & interface
 ----------------
 
