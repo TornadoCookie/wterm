@@ -1,4 +1,3 @@
-# Unmaintained
 ## wterm - xterm for wayland
 
 
