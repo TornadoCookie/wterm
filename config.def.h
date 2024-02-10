@@ -7,6 +7,7 @@
  */
 static char font[] = "Monospace:pixelsize=14:antialias=true:hinting=true:hintstyle=hintfull";
 static int borderpx = 2;
+static int topbarpx = 24;
 
 /*
  * terminal transparency

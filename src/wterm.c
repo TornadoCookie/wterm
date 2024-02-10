@@ -2794,9 +2794,11 @@ static void wlloadcursor(void) {
 void wltermclear(int col1, int row1, int col2, int row2) {
   uint32_t color = dc.col[IS_SET(MODE_REVERSE) ? defaultfg : defaultbg];
   color = (color & term_alpha << 24) | (color & 0x00FFFFFF);
-  if (!wl.zxdgdecorationmanager) { row1++; row2++; }
+  printf("wl.h = %d, topbarpx = %d\n", wl.h, topbarpx);
+  printf("x = %d, y = %d, w = %d, h = %d\n", borderpx + col1 * wl.cw, topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw, (row2 - row1 + 1) * wl.ch);
+  if (!wl.zxdgdecorationmanager) {row1--; row2--;}
   wld_fill_rectangle(wld.renderer, color, borderpx + col1 * wl.cw,
-                     borderpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
+                     topbarpx + row1 * wl.ch, (col2 - col1 + 1) * wl.cw,
                      (row2 - row1 + 1) * wl.ch);
 }
 
@@ -3003,10 +3005,13 @@ void wlinit(void) {
   wlloadcols();
   wlloadcursor();
   wl.vis = 0;
+
   if (wl.zxdgdecorationmanager)
-    wl.h = borderpx * 2 + term.row * wl.ch;
-  else
-    wl.h = borderpx + term.row * wl.ch + wl.ch;
+    topbarpx = borderpx;
+  else if (topbarpx < wl.ch)
+    fprintf(stderr, "warning: topbar height is less than text height\n");
+
+  wl.h = borderpx + topbarpx + term.row * wl.ch; 
   wl.w = 2 * borderpx + term.col * wl.cw;
 
   wl.surface = wl_compositor_create_surface(wl.cmp);
@@ -3039,8 +3044,7 @@ void wlinit(void) {
  */
 
 void wldraws(char *s, Glyph base, int x, int y, int charlen, int bytelen) {
-  if (!wl.zxdgdecorationmanager) y++;
-  int winx = borderpx + x * wl.cw, winy = borderpx + y * wl.ch,
+  int winx = borderpx + x * wl.cw, winy = topbarpx + y * wl.ch,
       width = charlen * wl.cw, xp, i;
   int frcflags, charexists;
   int u8fl, u8fblen, u8cblen, doesexist;
@@ -3292,7 +3296,7 @@ void wldrawcursor(void) {
   wldrawglyph(term.line[oldy][oldx], oldx, oldy);
   if (oldx != curx || oldy != term.c.y) {
     wl_surface_damage(wl.surface, borderpx + oldx * wl.cw,
-                      borderpx + oldy * wl.ch, wl.cw, wl.ch);
+                      topbarpx + oldy * wl.ch, wl.cw, wl.ch);
   }
 
   if (IS_SET(MODE_HIDE))
@@ -3316,27 +3320,27 @@ void wldrawcursor(void) {
     case 3: /* Blinking Underline */
     case 4: /* Steady Underline */
       wld_fill_rectangle(wld.renderer, cs, borderpx + curx * wl.cw,
-                         borderpx + (term.c.y + 1) * wl.ch - cursorthickness,
+                         topbarpx + (term.c.y + 1) * wl.ch - cursorthickness,
                          wl.cw, cursorthickness);
       break;
     case 5: /* Blinking bar */
     case 6: /* Steady bar */
       wld_fill_rectangle(wld.renderer, cs, borderpx + curx * wl.cw,
-                         borderpx + term.c.y * wl.ch, cursorthickness, wl.ch);
+                         topbarpx + term.c.y * wl.ch, cursorthickness, wl.ch);
       break;
     }
   } else {
     wld_fill_rectangle(wld.renderer, cs, borderpx + curx * wl.cw,
-                       borderpx + term.c.y * wl.ch, wl.cw - 1, 1);
+                       topbarpx + term.c.y * wl.ch, wl.cw - 1, 1);
     wld_fill_rectangle(wld.renderer, cs, borderpx + curx * wl.cw,
-                       borderpx + term.c.y * wl.ch, 1, wl.ch - 1);
+                       topbarpx + term.c.y * wl.ch, 1, wl.ch - 1);
     wld_fill_rectangle(wld.renderer, cs, borderpx + (curx + 1) * wl.cw - 1,
-                       borderpx + term.c.y * wl.ch, 1, wl.ch - 1);
+                       topbarpx + term.c.y * wl.ch, 1, wl.ch - 1);
     wld_fill_rectangle(wld.renderer, cs, borderpx + curx * wl.cw,
-                       borderpx + (term.c.y + 1) * wl.ch - 1, wl.cw, 1);
+                       topbarpx + (term.c.y + 1) * wl.ch - 1, wl.cw, 1);
   }
   wl_surface_damage(wl.surface, borderpx + curx * wl.cw,
-                    borderpx + term.c.y * wl.ch, wl.cw, wl.ch);
+                    topbarpx + term.c.y * wl.ch, wl.cw, wl.ch);
   oldx = curx, oldy = term.c.y;
 }
 
@@ -3356,9 +3360,9 @@ void drawtopbar(void) {
   Font *font = &dc.bfont;
 
   /* TODO: text won't draw */
-  wl_surface_damage(wl.surface, 0, 0, wl.w, wl.ch);
+  wl_surface_damage(wl.surface, 0, 0, wl.w, topbarpx);
   wld_fill_rectangle(wld.renderer, TRUECOLOR(255, 255, 255), 0, 0, wl.w,
-                     wl.ch);
+                     topbarpx);
   wld_draw_text(wld.renderer, font->match, defaultbg, borderpx, borderpx + 
                 font->ascent, topbartext, 2, NULL);
 }
@@ -3371,14 +3375,8 @@ void draw(void) {
       continue;
     for (y0 = y; y <= term.bot && term.dirty[y]; ++y)
       ;
-    if (wl.zxdgdecorationmanager) { 
-      wl_surface_damage(wl.surface, 0, y0 * wl.ch, wl.w,
-                        (y - y0) * wl.ch);
-    }
-    else {
-      wl_surface_damage(wl.surface, 0, wl.ch + y0 * wl.ch, wl.w,
-                        (y - y0) * wl.ch);
-    }
+    wl_surface_damage(wl.surface, 0, topbarpx + y0 * wl.ch, wl.w,
+                     (y - y0) * wl.ch);
   }
 
   wld_set_target_buffer(wld.renderer, wld.buffer);
@@ -3485,6 +3483,7 @@ char *kmap(xkb_keysym_t k, uint state) {
 
 void cresize(int width, int height) {
   int col, row;
+  printf("cresize(%d, %d)\n", width, height);
 
   if (width != 0)
     wl.w = width;
