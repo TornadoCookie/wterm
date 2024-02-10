@@ -3785,6 +3785,14 @@ void ptrbutton(void *data, struct wl_pointer *pointer, uint32_t serial,
         ttysend(mk->s, strlen(mk->s));
         return;
       }
+      if (wl.py < topbarpx) {
+        if (wl.xdgtoplevel) {
+          xdg_toplevel_move(wl.xdgtoplevel, wl.seat, serial);
+        }
+        if (wl.zxdgtoplevel) {
+          zxdg_toplevel_v6_move(wl.zxdgtoplevel, wl.seat, serial);
+        }
+      }
     }
 
     if (button == BTN_LEFT) {
