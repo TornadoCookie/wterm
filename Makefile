@@ -35,7 +35,7 @@ SHARE_PREFIX = $(PREFIX)
 
 all: wld wterm
 
-include/config.h:
+include/config.h: config.def.h
 	cp config.def.h include/config.h
 
 include/%-client-protocol.c: include/%.xml
