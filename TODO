@@ -1,18 +1,14 @@
 bugs from majestrate/wterm
 --------------------------
 
-* #1 - fixed by adding zxdg_shell_v6 support?
-* #3 - fixed by adding zxdg_shell_v6 support?
 * #5 - TODO: use pkg-config for wld
 * #8 - Redo font rendering
-* #9 - Was a sway bug, should be closed
 * #16 - See line 20
 * #17 - bug in wld...
 * #18 - must test with sway if this still exists
 * #19 - add arm support
 * #21 - add anti-aliasing - use 3ap's fork
 * #23 - fixed by font rewrite?
-* #24 - this project is now maintained, fixed
 
 st features
 -----------
