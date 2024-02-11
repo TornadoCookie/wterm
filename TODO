@@ -1,33 +1,26 @@
-vt emulation
-------------
+bugs from majestrate/wterm
+--------------------------
 
-* double-height support
+* #1 - fixed by adding zxdg_shell_v6 support?
+* #3 - fixed by adding zxdg_shell_v6 support?
+* #5 - TODO: use pkg-config for wld
+* #8 - Redo font rendering
+* #9 - Was a sway bug, should be closed
+* #16 - See line 20
+* #17 - bug in wld...
+* #18 - must test with sway if this still exists
+* #19 - add arm support
+* #21 - add anti-aliasing - use 3ap's fork
+* #23 - fixed by font rewrite?
+* #24 - this project is now maintained, fixed
 
 st features
 -----------
 
-* proper xim support
-* proper mouse support
+* xim support
+* mouse support
 * antialiased fonts
 * fallback fonts
-
-code & interface
-----------------
-
-* add a simple way to do multiplexing
-
-drawing
--------
-* add diacritics support to xdraws()
-* switch to a suckless font drawing library
-* make the font cache simpler
-* add better support for brightening of the upper colors
-
-bugs
-----
-
-* fix shift up/down (shift selection in emacs)
-* remove DEC test sequence when appropriate
 
 misc
 ----
