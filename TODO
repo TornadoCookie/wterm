@@ -7,7 +7,6 @@ bugs from majestrate/wterm
 * #17 - bug in wld...
 * #18 - must test with sway if this still exists
 * #19 - add arm support
-* #21 - add anti-aliasing - use 3ap's fork
 * #23 - fixed by font rewrite?
 
 st features
@@ -15,7 +14,6 @@ st features
 
 * xim support
 * mouse support
-* antialiased fonts
 * fallback fonts
 
 misc
